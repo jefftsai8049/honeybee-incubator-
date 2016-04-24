@@ -23,12 +23,23 @@ DHT22 controlTemp(A1);
 //timer for update sensors
 Timer sensorClock;
 
+//for saving sensor value [heater temperature, ambient temperature, ambient humidity, beehive temperature, beehive humidity]
 float sensorVal[5] = {0};
+
+//for setup heater pattern
 char heaterPattern[9] = {0b11111111 , 0b11111101 , 0b11011101 , 0b11011001 , 0b10011001 , 0b10011000 , 0b10001000 , 0b10000000 , 0b00000000};
+
+//for contorl parameters
 float errorSum = 0;
 float outVal = 0;
 float errorMemory = 20;
 float error = 0;
+
+float targetTemp = 34.5;
+float targetRH = 40.0;
+float kp = 0.6;
+float kpa = 0.50;
+float ki = 0.08;
 
 void heaterOutput(const int& val) {
   int outVal = val;
@@ -116,8 +127,16 @@ void loop() {
   else if(sensorVal[0] < 90)
     overload = 0; 
 
-  digitalWrite(RHPin,HIGH);
-  analogWrite(RHFanPin,255);
+  if(sensorVal[4] < targetRH)
+  {
+    digitalWrite(RHPin,HIGH);
+    analogWrite(RHFanPin,255);
+  }
+  else
+  {
+    digitalWrite(RHPin,LOW);
+    analogWrite(RHFanPin,0);
+  }
     
   if(overload)
   {
@@ -126,14 +145,6 @@ void loop() {
   }
   else
   {
-    static float targetTemp = 34.5;
-    float kp = 0.7;
-    float kpa = 0.50;
-    float ki = 0.12;
-    
-  
-    
-  
     float nowTemp = sensorVal[3];
     float ambientTemp = sensorVal[1];
   
@@ -142,10 +153,6 @@ void loop() {
     analogWrite(fanPin,128);
     outVal = (error)*kp+(targetTemp-ambientTemp)*kpa+errorSum*ki;
     heaterOutput((int)round(outVal));
-    
-    
-  
-  //analogWrite(fanPin,255);
   }
   sensorClock.update();
 }
